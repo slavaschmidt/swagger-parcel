@@ -67,10 +67,14 @@ paths:
 definitions:
   Parcel:
     required:
+      - id
       - name
       - content
       - state
     properties:
+      id:
+        type: integer
+        format: int64
       name:
         type: string
       state:

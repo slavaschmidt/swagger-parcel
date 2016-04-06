@@ -1,0 +1,286 @@
+swagger: '2.0'
+info:
+  version: '1.0.0'
+  title: Parcel API
+  description: | 
+    | An example API demonstrating protocol state dependencies
+    | The state transitions are defined as following:
+        |   1. packaged: The state of the new parcel. In this state no tracking and receipt exist
+        |   2. handed over to transporter (HOT) : an unsigned tracking exists for the parcel
+        |   3. moving : This is a state of the parcel if signed tracking exists for it but no receipt was created yet
+        |   4. handed over to receiver (HOR) : in this case both signed tracking and receipt exist for the parcel
+        |   5. delivered : in this case no tracking but a receipt exists for the parcel
+        |   6. lost : the parcel is in this state if tracking for it is signed and contains zero coordinates
+        |   7. destroyed : if accident statement exists for the parcel
+        | The state of the parcel changes implicitly in accordance with creation or removal of other resources
+        | Possible state transisions described in the crud.yaml
+host: localhost
+basePath: /resful
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /parcels:
+    post:
+      description: Creates a new parcel
+      operationId: create_parcel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+        - name: parcel
+          in: body
+          required: true
+          schema: 
+            $ref: '#/definitions/Parcel'
+      responses:
+        201:
+          description: The created parcel. The state of the new parcel is "packaged"
+          schema:
+            $ref: '#/definitions/Parcel'
+  /parcel/{id}:
+    post:
+      description: Updates a parcel. This operation is only allowed if parcel is in "packaged" state.
+      operationId: update_parcel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+        - name: parcel
+          in: body
+          required: true
+          schema: 
+            $ref: '#/definitions/Parcel'
+      responses:
+        200:
+          description: the updated parcel
+          schema:
+            $ref: '#/definitions/Parcel'
+    get:
+      description: Fetches a parcel
+      operationId: view_parcel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: the parcel
+          schema:
+            $ref: '#/definitions/Parcel'
+
+  /trackings:
+    post:
+      description: |
+        | creates a tracking with given coordinates. 
+        | new tracking must be explicitly signed. 
+        | at the moment of signing the transporter takes the responsibility 
+        | of delivering the parcel to the receiver
+      operationId: create_tracking
+      parameters:
+        - name: lon
+          in: query
+          required: true
+          type: number
+          format: float
+        - name: lat
+          in: query
+          required: true
+          type: number
+          format: float
+      responses:
+        201:
+          description: new parcel tracking
+          schema:
+            $ref: '#/definitions/Tracking'
+
+  /tracking/{id}:
+    put:
+      description: Updates a parcel tracking
+      operationId: update_tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+        - name: tracking
+          in: body
+          required: true
+          schema: 
+            $ref: '#/definitions/Tracking'
+      responses:
+        200:
+          description: parcel update
+          schema:
+            $ref: '#/definitions/Tracking'
+    get:
+      description: fetches a single parcel tracking
+      operationId: view_tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: the parcel tracking
+          schema:
+            $ref: '#/definitions/Tracking'
+    delete:
+      description: removes parcel tracking
+      operationId: delete_tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+      responses:
+        204:
+          description: the parcel tracking was deleted
+
+  /accident_statements:
+    post:
+      description: creates the information of a lost parcel
+      operationId: create_accident_statement
+      parameters:
+        - name: parcel
+          in: query
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: the lost parcel information
+          schema:
+            $ref: '#/definitions/AccidentStatement'
+
+  /accident_statement/{id}:
+    get:
+      description: fetches the information of a lost parcel
+      operationId: view_accident_statement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: the lost parcel information
+          schema:
+            $ref: '#/definitions/AccidentStatement'
+
+
+  /receipts:
+    post:
+      description: creates a parcel received receipt
+      operationId: create_receipt
+      parameters:
+        - name: receipt
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Receipt'
+      responses:
+        201:
+          description: the parcel received receipt
+          schema:
+            $ref: '#/definitions/Receipt'
+
+  /receipt/{id}:
+    get:
+      description: fetches the information of a parcel receipt
+      operationId: get_receipt
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: the parcel received receipt
+          schema:
+            $ref: '#/definitions/Receipt'
+definitions:
+  Parcel:
+    required:
+      - id
+      - name
+      - content
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+      content:
+        type: array
+        items:
+          type: string
+  Tracking:
+    required:
+      - id
+      - lon
+      - lat
+      - parcel
+    properties:
+      id:
+        type: integer
+        format: int64      
+      parcel:
+        type: integer
+        format: int64    
+      lon:
+        type: number
+        format: float
+      lat:
+        type: number
+        format: float
+      signature:
+        type: string
+  Receipt:
+    required:
+      - id
+      - recipient
+      - parcel      
+    properties:
+      id: 
+        type: integer
+        format: int64  
+      parcel:
+        type: integer
+        format: int64    
+      recipient:
+        type: string
+      timestamp:
+        type: string
+        format: date-time
+  AccidentStatement:
+    required:
+      - id
+      - timestamp
+      - parcel
+    properties:
+      id:
+        type: integer
+        format: int64    
+      timestamp:
+        type: string
+        format: date-time
+      parcel:
+        type: integer
+        format: int64
+
