@@ -1,0 +1,82 @@
+swagger: '2.0'
+info:
+  version: '1.0.0'
+  title: Parcel API
+  description: An example API demonstrating CRUD approach to the parcel example
+host: localhost
+basePath: /crud
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /parcel/{id}:
+    post:
+      description: |
+        | Changes a parcel resource
+        | The client is responsible for providing a valid parcel state
+        | Possible state transitions are:
+        |     -> packaged
+        |   packaged -> handed over to transporter (HOT)
+        |   HOT -> moving
+        |   moving -> handed over to receiver (HOR)
+        |   HOR -> delivered
+        |   moving -> lost 
+        |   moving -> destroyed
+        | The server must validate that the client only performs valid
+        | state transitions.
+      operationId: postParcel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+        - name: parcel
+          in: body
+          required: true
+          schema: 
+            $ref: '#/definitions/Parcel'
+      responses:
+        200:
+          description: The updated parcel
+          schema:
+            $ref: '#/definitions/Parcel'      
+        201:
+          description: |
+            | New Parcel created with a status "packaged"
+            | The content of the parcel can be changed until it is HOT
+          schema:
+            $ref: '#/definitions/Parcel'
+    get:
+      description: Fetches a single parcel
+      operationId: getParcel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: the parcel
+          schema:
+            $ref: '#/definitions/Parcel'
+definitions:
+  Parcel:
+    required:
+      - name
+      - content
+      - state
+    properties:
+      name:
+        type: string
+      state:
+        type: enum
+      content:
+        type: array
+        items:
+          type: string
+
